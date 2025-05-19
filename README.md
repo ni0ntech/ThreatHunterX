@@ -9,7 +9,7 @@ A Python-based IOC enrichment tool for threat hunters and SOC analysts.
 
 ## Getting Started
 ```bash
-git clone https://github.com/yourusername/ThreatHunterX.git
+git clone https://github.com/ni0ntech/ThreatHunterX.git
 cd ThreatHunterX
 pip install -r requirements.txt
 python threathunterx.py
