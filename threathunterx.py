@@ -1,4 +1,6 @@
 
+import argparse
+from datetime import datetime
 from db import init_db, get_ioc, save_ioc
 from ioc import IPIOC, DomainIOC, HashIOC
 from rich.console import Console
@@ -9,9 +11,10 @@ from rich import box
 console = Console()
 
 class ThreatHunterX:
-    def __init__(self, iocs):
+    def __init__(self, iocs, force_refresh=False):
         self.raw_iocs = iocs
         self.processed_iocs = []
+        self.force_refresh = force_refresh
 
     def classify(self, ioc):
         if self._is_ip(ioc):
@@ -27,26 +30,31 @@ class ThreatHunterX:
         console.print(Panel("🔍 [bold cyan]Enriching IOCs...[/bold cyan]", expand=False))
 
         table = Table(title="ThreatHunterX Results", box=box.SQUARE, show_lines=True)
-        table.add_column("IOC", style="bold white")
+        table.add_column("IOC", style="bold white", overflow="fold")
         table.add_column("Type", style="magenta")
         table.add_column("Score", justify="right", style="yellow")
         table.add_column("Severity", style="bold red")
-        table.add_column("Details", style="dim")
+        table.add_column("Details", style="dim", max_width=40, overflow="ellipsis")
+        table.add_column("Age", justify="center", style="cyan")
+
 
         for raw in self.raw_iocs:
             try:
                 cached = get_ioc(raw)
-                if cached:
+                if cached and not self.force_refresh:
                     ioc_obj = self.classify(raw)
                     ioc_obj.risk_score = cached["risk_score"]
                     ioc_obj.enrichment_data = cached["enrichment_data"]
-                    self.processed_iocs.append(ioc_obj)
-                    source = "[blue]CACHED[/blue]"
+                    age_days = (datetime.utcnow() - datetime.fromisoformat(cached["timestamp"])).days
+                    age_str = f"{age_days} day(s) old"
+                    age_warning = "[yellow] (Stale)[/yellow]" if age_days > 5 else ""
+                    source = f"[blue]CACHED[/blue]{age_warning}"
                 else:
                     ioc_obj = self.classify(raw)
                     ioc_obj.enrich()
                     self.processed_iocs.append(ioc_obj)
                     save_ioc(ioc_obj)
+                    age_str = "0"
                     source = "[green]LIVE or EXPIRED[/green]"
 
 
@@ -56,7 +64,8 @@ class ThreatHunterX:
                 ioc_type = type(ioc_obj).__name__.replace("IOC", "")
                 details = f"Detected by {enrichment.get('vt_positives', '?')} of {enrichment.get('total_engines', '?')}"
 
-                table.add_row(raw, ioc_type, str(score), severity, f"{details} • {source}")
+                table.add_row(raw, ioc_type, str(score), severity, f"{details} • {source}",age_str)
+
 
             except Exception as e:
                 console.print(f"[bold red]❌ Failed to process {raw}:[/bold red] {e}")
@@ -86,6 +95,12 @@ class ThreatHunterX:
 # Example run
 if __name__ == "__main__":
     init_db()
+
+    parser = argparse.ArgumentParser(description="ThreatHunterX IOC Enrichment Tool")
+    parser.add_argument("--force-refresh", action="store_true", help="Force re-enrichment of all IOCs")
+    args = parser.parse_args()
+
     iocs = ["8.8.8.8", "malicious.com", "44d88612fea8a8f36de82e1278abb02f"]
-    hunter = ThreatHunterX(iocs)
+    hunter = ThreatHunterX(iocs, force_refresh=args.force_refresh)
     hunter.run()
+
