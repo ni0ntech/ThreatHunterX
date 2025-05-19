@@ -1,0 +1,5 @@
+virustotal_api_key: "4e91a0c0caa043e7f61588cc035dc7db04e9e5a9519486aff2c0f83bff74ab21"
+abuseipdb_api_key: "YOUR_API_KEY"
+scoring:
+  vt_threshold: 10
+  abuseipdb_confidence: 50
