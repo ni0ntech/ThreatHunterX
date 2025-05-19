@@ -47,7 +47,8 @@ class ThreatHunterX:
                     ioc_obj.enrich()
                     self.processed_iocs.append(ioc_obj)
                     save_ioc(ioc_obj)
-                    source = "[green]LIVE[/green]"
+                    source = "[green]LIVE or EXPIRED[/green]"
+
 
                 score = ioc_obj.risk_score
                 enrichment = ioc_obj.enrichment_data

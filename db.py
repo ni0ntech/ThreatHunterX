@@ -2,9 +2,10 @@
 
 import sqlite3
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DB_NAME = "threathunterx.db"
+IOC_TTL_DAYS = 7  # Expire after 7 days
 
 def connect():
     return sqlite3.connect(DB_NAME)
@@ -30,7 +31,14 @@ def get_ioc(value):
     c.execute("SELECT * FROM iocs WHERE value = ?", (value,))
     row = c.fetchone()
     conn.close()
+
     if row:
+        cached_time = datetime.fromisoformat(row[4])
+        age = datetime.utcnow() - cached_time
+
+        if age > timedelta(days=IOC_TTL_DAYS):
+            return None  # Expired
+
         return {
             "value": row[0],
             "ioc_type": row[1],
@@ -38,6 +46,7 @@ def get_ioc(value):
             "enrichment_data": json.loads(row[3]),
             "timestamp": row[4]
         }
+
     return None
 
 def save_ioc(ioc_obj):
