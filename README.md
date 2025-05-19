@@ -13,3 +13,11 @@ git clone https://github.com/yourusername/ThreatHunterX.git
 cd ThreatHunterX
 pip install -r requirements.txt
 python threathunterx.py
+
+## Future Roadmap
+- Add Rich CLI output (colorized tables and scores)
+- Implement risk tier scoring (Low / Medium / High)
+- Export enrichment results to Markdown and CSV
+- Add SQLite-based caching to avoid duplicate API calls
+- Build web-based front-end (React or static HTML)
+- Deploy full-stack version via AWS Amplify
